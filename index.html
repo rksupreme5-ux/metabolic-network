@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metabolic Precursors & Amino Acids Network</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Metabolic Precursors & Amino Acids</h1>
+        <p>Hierarchical network mapping 6 central precursors to the 20 amino acids they generate</p>
+        
+        <div class="legend">
+            <span class="legend-item"><span class="dot tca"></span> Citric Acid Cycle (TCA)</span>
+            <span class="legend-item"><span class="dot gly"></span> Glycolysis</span>
+            <span class="legend-item"><span class="dot ppp"></span> Pentose Phosphate Pathway</span>
+        </div>
+    </div>
+    
+    <div id="graph-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

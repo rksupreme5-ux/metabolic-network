@@ -1,0 +1,91 @@
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --tca-color: #7b9eb6;
+    --gly-color: #72a95f;
+    --ppp-color: #d89f81;
+    --line-color: #555555;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+}
+
+.header {
+    padding: 20px 40px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin: 0 0 5px 0;
+}
+
+p {
+    font-size: 0.9rem;
+    color: #aaaaaa;
+    margin: 0 0 15px 0;
+}
+
+.legend {
+    display: flex;
+    gap: 20px;
+    font-size: 0.85rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot.tca { background-color: var(--tca-color); }
+.dot.gly { background-color: var(--gly-color); }
+.dot.ppp { background-color: var(--ppp-color); }
+
+#graph-container {
+    width: 100vw;
+    height: 100vh;
+    cursor: grab;
+}
+
+#graph-container:active {
+    cursor: grabbing;
+}
+
+/* SVG Elements */
+.node circle {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    transition: fill 0.2s, stroke 0.2s;
+}
+
+.node text {
+    font-family: sans-serif;
+    font-size: 12px;
+    fill: #ffffff;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.link {
+    stroke: var(--line-color);
+    stroke-opacity: 0.6;
+    transition: stroke-opacity 0.2s, stroke-width 0.2s;
+}
