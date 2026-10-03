@@ -79,13 +79,14 @@ const svg = d3.select("#graph-container")
     .attr("width", width)
     .attr("height", height);
 
-// UPDATED PHYSICS: Added distanceMax(200) so distant clusters stop repelling
+// UPDATED PHYSICS: Removed the distance cap on charge so they spread out, 
+// and vastly weakened the X/Y forces so they float freely.
 const simulation = d3.forceSimulation(graphData.nodes)
     .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(60))
-    .force("charge", d3.forceManyBody().strength(-300).distanceMax(200))
+    .force("charge", d3.forceManyBody().strength(-300)) 
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("x", d3.forceX(width / 2).strength(0.06))
-    .force("y", d3.forceY(height / 2).strength(0.06))
+    .force("x", d3.forceX(width / 2).strength(0.015)) // Relaxed pull to center
+    .force("y", d3.forceY(height / 2).strength(0.015)) // Relaxed pull to center
     .force("collide", d3.forceCollide().radius(d => d.size + 15));
 
 const link = svg.append("g")
@@ -137,7 +138,7 @@ node.on("mouseover", function(event, d) {
         .style("stroke-width", 2);
 });
 
-// UPDATED TICK: Added a rigid bounding box to lock nodes inside the window
+// The strict bounding box keeps them from ever leaving the screen edges.
 simulation.on("tick", () => {
     node.attr("transform", d => {
         const radius = d.size + 15;
