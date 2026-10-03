@@ -24,7 +24,7 @@ const graphData = {
         { id: "Glutamate", group: "tca", type: "amino", size: 8 },
         { id: "Glutamine", group: "tca", type: "amino", size: 8 },
         { id: "Proline", group: "tca", type: "amino", size: 8 },
-        { id: "Arginine", group: "tca", type: "amino", size: 8 },
+        { id: "Arginine", tca: "tca", type: "amino", size: 8 },
         { id: "Alanine", group: "gly", type: "amino", size: 8 },
         { id: "Valine", group: "gly", type: "amino", size: 8 },
         { id: "Leucine", group: "gly", type: "amino", size: 8 },
@@ -66,8 +66,9 @@ const graphData = {
     ]
 };
 
-const width = window.innerWidth;
-const height = window.innerHeight;
+// Use dynamic variables so they can update on mobile/resize
+let width = window.innerWidth;
+let height = window.innerHeight;
 const colorMap = {
     "tca": "#7b9eb6",
     "gly": "#72a95f",
@@ -79,15 +80,14 @@ const svg = d3.select("#graph-container")
     .attr("width", width)
     .attr("height", height);
 
-// UPDATED PHYSICS: Removed the distance cap on charge so they spread out, 
-// and vastly weakened the X/Y forces so they float freely.
+// VASTLY RELAXED PHYSICS: longer links, stronger repulsion, barely any center pull
 const simulation = d3.forceSimulation(graphData.nodes)
-    .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(60))
-    .force("charge", d3.forceManyBody().strength(-300)) 
+    .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(90))
+    .force("charge", d3.forceManyBody().strength(-400)) 
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("x", d3.forceX(width / 2).strength(0.015)) // Relaxed pull to center
-    .force("y", d3.forceY(height / 2).strength(0.015)) // Relaxed pull to center
-    .force("collide", d3.forceCollide().radius(d => d.size + 15));
+    .force("x", d3.forceX(width / 2).strength(0.005))
+    .force("y", d3.forceY(height / 2).strength(0.005))
+    .force("collide", d3.forceCollide().radius(d => d.size + 20));
 
 const link = svg.append("g")
     .attr("class", "links")
@@ -127,6 +127,7 @@ function isConnected(a, b) {
     return linkedByIndex[`${a.id},${b.id}`] || a.id === b.id;
 }
 
+// Hover effects
 node.on("mouseover", function(event, d) {
     node.style("opacity", o => isConnected(d, o) ? 1 : 0.1);
     link.style("stroke-opacity", o => (o.source.id === d.id || o.target.id === d.id) ? 1 : 0.1)
@@ -138,10 +139,31 @@ node.on("mouseover", function(event, d) {
         .style("stroke-width", 2);
 });
 
-// The strict bounding box keeps them from ever leaving the screen edges.
+// Double-click to unpin a node
+node.on("dblclick", function(event, d) {
+    d.fx = null;
+    d.fy = null;
+    simulation.alpha(0.3).restart();
+});
+
+// Mobile & Resize support
+window.addEventListener("resize", () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+    
+    // Update center coordinates dynamically
+    simulation.force("center", d3.forceCenter(width / 2, height / 2))
+              .force("x", d3.forceX(width / 2).strength(0.005))
+              .force("y", d3.forceY(height / 2).strength(0.005));
+    simulation.alpha(0.3).restart();
+});
+
+// Dynamic bounding box referencing the updated window size
 simulation.on("tick", () => {
     node.attr("transform", d => {
         const radius = d.size + 15;
+        // Allows nodes to be pinned right against the edge of any screen size
         d.x = Math.max(radius, Math.min(width - radius, d.x));
         d.y = Math.max(radius, Math.min(height - radius, d.y));
         return `translate(${d.x},${d.y})`;
@@ -167,6 +189,5 @@ function dragged(event, d) {
 
 function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
-    d.fx = null; 
-    d.fy = null;
+    // Removing d.fx = null and d.fy = null leaves the node pinned where dropped
 }
