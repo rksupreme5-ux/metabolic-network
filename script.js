@@ -37,44 +37,35 @@ const graphData = {
         { id: "Tyrosine", group: "ppp", type: "amino", size: 8 }
     ],
     links: [
-        // Pathway to Precursor Links
         { source: "Citric Acid Cycle", target: "Oxaloacetate" },
         { source: "Citric Acid Cycle", target: "a-Ketoglutarate" },
         { source: "Glycolysis", target: "Pyruvate" },
         { source: "Glycolysis", target: "3-Phosphoglycerate" },
         { source: "Pentose Phosphate Pathway", target: "Ribose 5-phosphate" },
         { source: "Pentose Phosphate Pathway", target: "PEP + Erythrose 4-phosphate" },
-
-        // Precursor to Amino Acid Links
         { source: "Oxaloacetate", target: "Aspartate" },
         { source: "Aspartate", target: "Asparagine" },
         { source: "Aspartate", target: "Methionine" },
         { source: "Aspartate", target: "Threonine" },
         { source: "Threonine", target: "Isoleucine" },
         { source: "Aspartate", target: "Lysine" },
-        
         { source: "a-Ketoglutarate", target: "Glutamate" },
         { source: "Glutamate", target: "Glutamine" },
         { source: "Glutamate", target: "Proline" },
         { source: "Glutamate", target: "Arginine" },
-
         { source: "Pyruvate", target: "Alanine" },
         { source: "Pyruvate", target: "Valine" },
         { source: "Pyruvate", target: "Leucine" },
-
         { source: "3-Phosphoglycerate", target: "Serine" },
         { source: "Serine", target: "Cysteine" },
         { source: "Serine", target: "Glycine" },
-
         { source: "Ribose 5-phosphate", target: "Histidine" },
-        
         { source: "PEP + Erythrose 4-phosphate", target: "Tryptophan" },
         { source: "PEP + Erythrose 4-phosphate", target: "Phenylalanine" },
         { source: "PEP + Erythrose 4-phosphate", target: "Tyrosine" }
     ]
 };
 
-// Configuration
 const width = window.innerWidth;
 const height = window.innerHeight;
 const colorMap = {
@@ -83,22 +74,20 @@ const colorMap = {
     "ppp": "#d89f81"
 };
 
-// Setup SVG
 const svg = d3.select("#graph-container")
     .append("svg")
     .attr("width", width)
     .attr("height", height);
 
-// Setup Force Simulation
+// UPDATED PHYSICS: Added distanceMax(200) so distant clusters stop repelling
 const simulation = d3.forceSimulation(graphData.nodes)
     .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(60))
-    .force("charge", d3.forceManyBody().strength(-300))
+    .force("charge", d3.forceManyBody().strength(-300).distanceMax(200))
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("x", d3.forceX(width / 2).strength(0.05))
-    .force("y", d3.forceY(height / 2).strength(0.05))
+    .force("x", d3.forceX(width / 2).strength(0.06))
+    .force("y", d3.forceY(height / 2).strength(0.06))
     .force("collide", d3.forceCollide().radius(d => d.size + 15));
 
-// Draw Links
 const link = svg.append("g")
     .attr("class", "links")
     .selectAll("line")
@@ -107,7 +96,6 @@ const link = svg.append("g")
     .attr("class", "link")
     .attr("stroke-width", 2);
 
-// Draw Nodes
 const node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
@@ -119,18 +107,15 @@ const node = svg.append("g")
         .on("drag", dragged)
         .on("end", dragended));
 
-// Add Circles to Nodes
 node.append("circle")
     .attr("r", d => d.size)
-    .attr("fill", d => colorMap[d.group]);
+    .style("fill", d => colorMap[d.group]);
 
-// Add Labels to Nodes
 node.append("text")
     .attr("dy", d => d.size + 15)
     .attr("text-anchor", "middle")
     .text(d => d.id);
 
-// Pre-calculate connected nodes for optimized hover effect
 const linkedByIndex = {};
 graphData.links.forEach(d => {
     linkedByIndex[`${d.source.id},${d.target.id}`] = true;
@@ -141,7 +126,6 @@ function isConnected(a, b) {
     return linkedByIndex[`${a.id},${b.id}`] || a.id === b.id;
 }
 
-// Hover Interaction
 node.on("mouseover", function(event, d) {
     node.style("opacity", o => isConnected(d, o) ? 1 : 0.1);
     link.style("stroke-opacity", o => (o.source.id === d.id || o.target.id === d.id) ? 1 : 0.1)
@@ -153,19 +137,22 @@ node.on("mouseover", function(event, d) {
         .style("stroke-width", 2);
 });
 
-// Update positions on simulation tick
+// UPDATED TICK: Added a rigid bounding box to lock nodes inside the window
 simulation.on("tick", () => {
+    node.attr("transform", d => {
+        const radius = d.size + 15;
+        d.x = Math.max(radius, Math.min(width - radius, d.x));
+        d.y = Math.max(radius, Math.min(height - radius, d.y));
+        return `translate(${d.x},${d.y})`;
+    });
+
     link
         .attr("x1", d => d.source.x)
         .attr("y1", d => d.source.y)
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
-
-    node
-        .attr("transform", d => `translate(${d.x},${d.y})`);
 });
 
-// Drag Functions
 function dragstarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
