@@ -1,20 +1,15 @@
 // Dataset representing the pathways, precursors, and amino acids
 const graphData = {
     nodes: [
-        // Core Pathways (Size: 25)
         { id: "Citric Acid Cycle", group: "tca", type: "pathway", size: 25 },
         { id: "Glycolysis", group: "gly", type: "pathway", size: 25 },
         { id: "Pentose Phosphate Pathway", group: "ppp", type: "pathway", size: 25 },
-
-        // Precursors (Size: 15)
         { id: "Oxaloacetate", group: "tca", type: "precursor", size: 15 },
         { id: "a-Ketoglutarate", group: "tca", type: "precursor", size: 15 },
         { id: "Pyruvate", group: "gly", type: "precursor", size: 15 },
         { id: "3-Phosphoglycerate", group: "gly", type: "precursor", size: 15 },
         { id: "Ribose 5-phosphate", group: "ppp", type: "precursor", size: 15 },
         { id: "PEP + Erythrose 4-phosphate", group: "ppp", type: "precursor", size: 15 },
-
-        // Amino Acids (Size: 8)
         { id: "Aspartate", group: "tca", type: "amino", size: 8 },
         { id: "Asparagine", group: "tca", type: "amino", size: 8 },
         { id: "Methionine", group: "tca", type: "amino", size: 8 },
@@ -24,7 +19,7 @@ const graphData = {
         { id: "Glutamate", group: "tca", type: "amino", size: 8 },
         { id: "Glutamine", group: "tca", type: "amino", size: 8 },
         { id: "Proline", group: "tca", type: "amino", size: 8 },
-        { id: "Arginine", tca: "tca", type: "amino", size: 8 },
+        { id: "Arginine", group: "tca", type: "amino", size: 8 },
         { id: "Alanine", group: "gly", type: "amino", size: 8 },
         { id: "Valine", group: "gly", type: "amino", size: 8 },
         { id: "Leucine", group: "gly", type: "amino", size: 8 },
@@ -66,27 +61,25 @@ const graphData = {
     ]
 };
 
-// Use dynamic variables so they can update on mobile/resize
 let width = window.innerWidth;
 let height = window.innerHeight;
-const colorMap = {
-    "tca": "#7b9eb6",
-    "gly": "#72a95f",
-    "ppp": "#d89f81"
-};
+
+// Spawn all nodes near the center initially so they explode outward naturally
+graphData.nodes.forEach(node => {
+    node.x = width / 2 + (Math.random() - 0.5) * 100;
+    node.y = height / 2 + (Math.random() - 0.5) * 100;
+});
+
+const colorMap = { "tca": "#7b9eb6", "gly": "#72a95f", "ppp": "#d89f81" };
 
 const svg = d3.select("#graph-container")
     .append("svg")
     .attr("width", width)
     .attr("height", height);
 
-// VASTLY RELAXED PHYSICS: longer links, stronger repulsion, barely any center pull
 const simulation = d3.forceSimulation(graphData.nodes)
     .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(90))
     .force("charge", d3.forceManyBody().strength(-400)) 
-    .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("x", d3.forceX(width / 2).strength(0.005))
-    .force("y", d3.forceY(height / 2).strength(0.005))
     .force("collide", d3.forceCollide().radius(d => d.size + 20));
 
 const link = svg.append("g")
@@ -95,7 +88,8 @@ const link = svg.append("g")
     .data(graphData.links)
     .enter().append("line")
     .attr("class", "link")
-    .attr("stroke-width", 2);
+    .attr("stroke-width", 2)
+    .style("stroke-opacity", 0.6); // Hardcoded opacity so it never changes
 
 const node = svg.append("g")
     .attr("class", "nodes")
@@ -117,28 +111,6 @@ node.append("text")
     .attr("text-anchor", "middle")
     .text(d => d.id);
 
-const linkedByIndex = {};
-graphData.links.forEach(d => {
-    linkedByIndex[`${d.source.id},${d.target.id}`] = true;
-    linkedByIndex[`${d.target.id},${d.source.id}`] = true;
-});
-
-function isConnected(a, b) {
-    return linkedByIndex[`${a.id},${b.id}`] || a.id === b.id;
-}
-
-// Hover effects
-node.on("mouseover", function(event, d) {
-    node.style("opacity", o => isConnected(d, o) ? 1 : 0.1);
-    link.style("stroke-opacity", o => (o.source.id === d.id || o.target.id === d.id) ? 1 : 0.1)
-        .style("stroke-width", o => (o.source.id === d.id || o.target.id === d.id) ? 3 : 1);
-})
-.on("mouseout", function() {
-    node.style("opacity", 1);
-    link.style("stroke-opacity", 0.6)
-        .style("stroke-width", 2);
-});
-
 // Double-click to unpin a node
 node.on("dblclick", function(event, d) {
     d.fx = null;
@@ -146,24 +118,16 @@ node.on("dblclick", function(event, d) {
     simulation.alpha(0.3).restart();
 });
 
-// Mobile & Resize support
 window.addEventListener("resize", () => {
     width = window.innerWidth;
     height = window.innerHeight;
     svg.attr("width", width).attr("height", height);
-    
-    // Update center coordinates dynamically
-    simulation.force("center", d3.forceCenter(width / 2, height / 2))
-              .force("x", d3.forceX(width / 2).strength(0.005))
-              .force("y", d3.forceY(height / 2).strength(0.005));
     simulation.alpha(0.3).restart();
 });
 
-// Dynamic bounding box referencing the updated window size
 simulation.on("tick", () => {
     node.attr("transform", d => {
         const radius = d.size + 15;
-        // Allows nodes to be pinned right against the edge of any screen size
         d.x = Math.max(radius, Math.min(width - radius, d.x));
         d.y = Math.max(radius, Math.min(height - radius, d.y));
         return `translate(${d.x},${d.y})`;
@@ -189,5 +153,5 @@ function dragged(event, d) {
 
 function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
-    // Removing d.fx = null and d.fy = null leaves the node pinned where dropped
+    // Node remains pinned at drop location
 }
