@@ -94,6 +94,8 @@ const simulation = d3.forceSimulation(graphData.nodes)
     .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(60))
     .force("charge", d3.forceManyBody().strength(-300))
     .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("x", d3.forceX(width / 2).strength(0.05))
+    .force("y", d3.forceY(height / 2).strength(0.05))
     .force("collide", d3.forceCollide().radius(d => d.size + 15));
 
 // Draw Links
@@ -177,7 +179,6 @@ function dragged(event, d) {
 
 function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
-    // Remove the two lines below if you want nodes to stay pinned where dropped
     d.fx = null; 
     d.fy = null;
 }
