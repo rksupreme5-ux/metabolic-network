@@ -64,7 +64,6 @@ const graphData = {
 let width = window.innerWidth;
 let height = window.innerHeight;
 
-// Spawn all nodes near the center initially so they explode outward naturally
 graphData.nodes.forEach(node => {
     node.x = width / 2 + (Math.random() - 0.5) * 100;
     node.y = height / 2 + (Math.random() - 0.5) * 100;
@@ -89,7 +88,7 @@ const link = svg.append("g")
     .enter().append("line")
     .attr("class", "link")
     .attr("stroke-width", 2)
-    .style("stroke-opacity", 0.6); // Hardcoded opacity so it never changes
+    .style("stroke-opacity", 0.6);
 
 const node = svg.append("g")
     .attr("class", "nodes")
@@ -97,6 +96,7 @@ const node = svg.append("g")
     .data(graphData.nodes)
     .enter().append("g")
     .attr("class", "node")
+    .style("opacity", 1) // Forcing full opacity permanently
     .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
@@ -111,7 +111,6 @@ node.append("text")
     .attr("text-anchor", "middle")
     .text(d => d.id);
 
-// Double-click to unpin a node
 node.on("dblclick", function(event, d) {
     d.fx = null;
     d.fy = null;
@@ -153,5 +152,4 @@ function dragged(event, d) {
 
 function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
-    // Node remains pinned at drop location
 }
